@@ -131,7 +131,7 @@
     <label for="requestText">主管提出的要求 / 指示</label>
     <textarea id="requestText" placeholder="例如：『這週末請你把整份年度報告完成，週一早上交，同時加班處理另外三個專案。』"></textarea>
     <div class="hint">💡 用「例」按鈕填入練習資料。</div>
-    <button class="btn secondary" style="margin-top:10px;" onclick="fillExample()">填入練習範例</button>
+    <button id="exampleBtn" class="btn secondary" style="margin-top:10px;" onclick="fillExample()">填入練習範例</button>
   </div>
 
   <!-- 步驟 2 -->
@@ -188,16 +188,44 @@
 <div class="toast" id="toast">已複製到剪貼簿</div>
 
 <script>
-  const EXAMPLE = {
-    request: "這週末請你把整份年度報告完成，週一早上交，同時加班處理另外三個專案。",
-    reasonVal: "capacity",
-    alternative: "週二上午交年度報告，並先於週一提供重點摘要",
-  };
+  const EXAMPLES = [
+    {
+      request: "這週末請你把整份年度報告完成，週一早上交，同時加班處理另外三個專案。",
+      reasonVal: "capacity",
+      alternative: "週二上午交年度報告，並先於週一提供重點摘要",
+      tone: "polite"
+    },
+    {
+      request: "這個週末請你順手把客戶的 DEMO 環境建起來，週一一早直接對客戶展示。",
+      reasonVal: "time",
+      alternative: "我會先完成 DEMO 腳本與畫面截圖，程式部分請另一位同事協助",
+      tone: "neutral"
+    },
+    {
+      request: "因為廠商趕時間，請你代表公司直接在合約上用印簽核。",
+      reasonVal: "scope",
+      alternative: "需依內部流程送會計與法務審核後才能用印",
+      tone: "firm"
+    },
+    {
+      request: "請你把測試環境的連線帳號開放給外部外包廠商直接使用。",
+      reasonVal: "policy",
+      alternative: "請採購單位先簽妥保密協議並申請正式授權帳號",
+      tone: "neutral"
+    }
+  ];
+
+  let exampleIndex = -1;
 
   function fillExample() {
-    document.getElementById("requestText").value = EXAMPLE.request;
-    document.getElementById("reason").value = EXAMPLE.reasonVal;
-    document.getElementById("alternative").value = EXAMPLE.alternative;
+    exampleIndex = (exampleIndex + 1) % EXAMPLES.length;
+    const e = EXAMPLES[exampleIndex];
+    document.getElementById("requestText").value = e.request;
+    document.getElementById("reason").value = e.reasonVal;
+    document.getElementById("alternative").value = e.alternative;
+    document.querySelector('input[name="tone"][value="' + e.tone + '"]').checked = true;
+    const btn = document.getElementById("exampleBtn");
+    if (btn) btn.textContent = "填入練習範例（" + (exampleIndex + 1) + "/" + EXAMPLES.length + "）";
   }
 
   function getTone() {
