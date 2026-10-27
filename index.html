@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>委婉拒絕小工具（POC）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #2b6cb0;
+    --primary-dark: #22558f;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #1a202c;
+    --muted: #718096;
+    --border: #e2e8f0;
+    --accent: #ed8936;
+    --success: #38a169;
+  }
+  body {
+    font-family: "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    padding: 28px 24px;
+    text-align: center;
+  }
+  header h1 { font-size: 26px; margin-bottom: 6px; }
+  header p { font-size: 14px; opacity: .9; max-width: 640px; margin: 0 auto; }
+  main { max-width: 780px; margin: 0 auto; padding: 24px 16px 64px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+  .step-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 17px; font-weight: 700; margin-bottom: 16px;
+  }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  input, select, textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit;
+    background: #fff; color: var(--text);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(43,108,176,.15);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+
+  .tone-options { display: flex; gap: 10px; flex-wrap: wrap; }
+  .tone-options label {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 8px 16px; font-weight: 500; cursor: pointer;
+    font-size: 14px; background: #fff;
+  }
+  .tone-options input { width: auto; accent-color: var(--primary); }
+  .tone-options label:has(input:checked) {
+    border-color: var(--primary); background: #ebf4ff; font-weight: 600;
+  }
+
+  .btn {
+    display: inline-block; border: none; cursor: pointer;
+    background: var(--primary); color: #fff;
+    padding: 12px 22px; border-radius: 8px;
+    font-size: 15px; font-weight: 600; font-family: inherit;
+    transition: background .15s;
+  }
+  .btn:hover { background: var(--primary-dark); }
+  .btn.secondary {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--primary); font-weight: 600;
+  }
+  .btn.secondary:hover { background: #ebf4ff; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .result-area {
+    display: none; margin-top: 4px;
+  }
+  .result-box {
+    background: #f8fafc; border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; min-height: 140px;
+    white-space: pre-wrap; line-height: 1.7; font-size: 14.5px;
+  }
+  .result-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--success); color: #fff; padding: 10px 20px;
+    border-radius: 8px; font-size: 14px; opacity: 0; pointer-events: none;
+    transition: all .25s; box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .footer { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 12px; }
+  .badge { display: inline-block; background: #fff7ed; color: var(--accent);
+    border: 1px solid #fed7aa; padding: 4px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💬 委婉拒絕小工具</h1>
+  <p>好好說「不」：幫員工委婉、專業地拒絕主管或上層的不合理要求，同時把立場說清楚。</p>
+  <div style="margin-top:12px;"><span class="badge">POC 最小可動版本 · 資料皆為練習用假資料</span></div>
+</header>
+
+<main>
+  <!-- 步驟 1 -->
+  <div class="card">
+    <div class="step-title"><span class="step-num">1</span> 描述這個要求</div>
+    <label for="requestText">主管提出的要求 / 指示</label>
+    <textarea id="requestText" placeholder="例如：『這週末請你把整份年度報告完成，週一早上交，同時加班處理另外三個專案。』"></textarea>
+    <div class="hint">💡 用「例」按鈕填入練習資料。</div>
+    <button class="btn secondary" style="margin-top:10px;" onclick="fillExample()">填入練習範例</button>
+  </div>
+
+  <!-- 步驟 2 -->
+  <div class="card">
+    <div class="step-title"><span class="step-num">2</span> 選擇拒絕原因 / 理由</div>
+    <div class="row">
+      <div>
+        <label for="reason">主要理由（擇一）</label>
+        <select id="reason">
+          <option value="">請選擇…</option>
+          <option value="prior">已有安排好的優先事項</option>
+          <option value="capacity">目前工作量已滿載</option>
+          <option value="scope">超出我的職權 / 專業範圍</option>
+          <option value="time">時間不足以做到合理品質</option>
+          <option value="policy">與公司規定 / 流程不符</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+      <div>
+        <label for="alternative">你能提出什麼替代方案（選填）</label>
+        <input type="text" id="alternative" placeholder="例如：可把期限延到週三，或先完成摘要報告">
+      </div>
+    </div>
+  </div>
+
+  <!-- 步驟 3 -->
+  <div class="card">
+    <div class="step-title"><span class="step-num">3</span> 選擇語氣</div>
+    <div class="tone-options">
+      <label><input type="radio" name="tone" value="polite" checked> 禮貌委婉</label>
+      <label><input type="radio" name="tone" value="neutral"> 中性專業</label>
+      <label><input type="radio" name="tone" value="firm"> 明確堅定</label>
+    </div>
+    <div class="hint">語氣只影響措辭，內容由你填的欄位決定。</div>
+  </div>
+
+  <!-- 步驟 4 -->
+  <div class="card">
+    <div class="step-title"><span class="step-num">4</span> 產出回覆草稿</div>
+    <button class="btn" onclick="generate()">生成回覆草稿</button>
+
+    <div class="result-area" id="resultArea">
+      <div class="result-box" id="resultBox"></div>
+      <div class="result-actions">
+        <button class="btn" onclick="copyResult()">📋 複製</button>
+        <button class="btn secondary" onclick="resetAll()">重新開始</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">POC by 第九組 — 本頁僅使用練習假資料，不包含任何真實客戶資料。</div>
+</main>
+
+<div class="toast" id="toast">已複製到剪貼簿</div>
+
+<script>
+  const EXAMPLE = {
+    request: "這週末請你把整份年度報告完成，週一早上交，同時加班處理另外三個專案。",
+    reasonVal: "capacity",
+    alternative: "週二上午交年度報告，並先於週一提供重點摘要",
+  };
+
+  function fillExample() {
+    document.getElementById("requestText").value = EXAMPLE.request;
+    document.getElementById("reason").value = EXAMPLE.reasonVal;
+    document.getElementById("alternative").value = EXAMPLE.alternative;
+  }
+
+  function getTone() {
+    return document.querySelector('input[name="tone"]:checked').value;
+  }
+
+  const REASON_TEXT = {
+    prior: "我目前有排定好的優先事項需要完成",
+    capacity: "我目前的工作量已滿載",
+    scope: "這超出我的職權與專業範圍",
+    time: "以現在的時間，我無法做到合理的品質",
+    policy: "這與公司的規定或流程不符",
+    other: "我有一些個人因素需要考量",
+  };
+
+  function generate() {
+    const req = document.getElementById("requestText").value.trim();
+    const reasonKey = document.getElementById("reason").value;
+    const alt = document.getElementById("alternative").value.trim();
+    const tone = getTone();
+
+    if (!req) { alert("請先描述這個要求（步驟 1）。"); return; }
+    if (!reasonKey) { alert("請選擇一個拒絕原因（步驟 2）。"); return; }
+    const reason = REASON_TEXT[reasonKey] || REASON_TEXT.other;
+    const altLine = alt ? `我建議的替代方案是：${alt}。` : "我也想與您討論一個雙方都能接受的替代作法。";
+
+    let open, close;
+    if (tone === "polite") {
+      open = "主管您好，非常感謝您對我的信任與指派。關於「" + req + "」，我想誠懇地與您說明我的情況。";
+      close = "真的很抱歉無法完全配合，但我也很希望能把事情做好。希望您能理解，期待與您進一步討論。";
+    } else if (tone === "neutral") {
+      open = "關於「" + req + "」，我想先向您說明目前的實際狀況，以便我們一起找到可行的方式。";
+      close = "感謝您的理解，若有任何需要我再補充的地方，請隨時告訴我。";
+    } else {
+      open = "關於「" + req + "」，我需要明確地向您說明：目前我無法照辦。原因如下：";
+      close = "這是基於實際情況的判斷，並非不願意配合。很希望能與您一起調整方案。";
+    }
+
+    const draft =
+      open + "\n\n" +
+      "原因：" + reason + "。\n\n" +
+      altLine + "\n\n" +
+      close;
+
+    document.getElementById("resultBox").textContent = draft;
+    document.getElementById("resultArea").style.display = "block";
+    document.getElementById("resultArea").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function copyResult() {
+    const text = document.getElementById("resultBox").textContent;
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showToast);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta);
+      ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+      showToast();
+    }
+  }
+
+  let toastTimer;
+  function showToast() {
+    const t = document.getElementById("toast");
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+  }
+
+  function resetAll() {
+    document.getElementById("requestText").value = "";
+    document.getElementById("reason").value = "";
+    document.getElementById("alternative").value = "";
+    document.querySelector('input[name="tone"][value="polite"]').checked = true;
+    document.getElementById("resultArea").style.display = "none";
+  }
+</script>
+</body>
+</html>
